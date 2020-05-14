@@ -5,10 +5,20 @@ import os
 import json
 import copy
 
-ROOT = './Problem_Set_Data/Data'
-JSON_FOLDER = './Problem_Set_Data/JSON'
+ROOT = './Dataset/Data'
+JSON_FOLDER = './Dataset/JSON'
 HAAR = './resources/haarcascade_frontalface_default.xml'
 
+# params for ShiTomasi corner detection
+FEATURE_PARAM = dict( maxCorners = 200,
+                       qualityLevel = 0.05,
+                       minDistance = 5,
+                       blockSize = 5 )
+
+# Parameters for lucas kanade optical flow
+LK_PARAMS = dict( winSize  = (15,15),
+                  maxLevel = 5,
+                  criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
 
 def harrCascadeFaceDet(image):
     faces = face_cascade.detectMultiScale(image, 1.3, 5)
@@ -55,18 +65,36 @@ if __name__ == '__main__':
     video_filenames = os.listdir(ROOT)
     face_cascade = cv2.CascadeClassifier(HAAR)
     cap = cv2.VideoCapture(os.path.join(ROOT,video_filenames[0]))
-
     assert cap.isOpened(), 'Cannot capture source'
+
+    # First Frame processing
     ret = True
+    counter = 0
+    cornerList = []
     while(ret):
         ret, frame = cap.read()
+        newFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faceFrame, _ = harrCascadeFaceDet(newFrame)
+        # Find Corner and then Track it
+        if counter == 0:
+            savedFrame = faceFrame
+            savedSize  = faceFrame.shape[::-1]
+            p0 = cv2.goodFeaturesToTrack(savedFrame, mask = None, **FEATURE_PARAM)
+            cornerList.append(p0)
+        else :
+            faceFrame = cv2.resize(faceFrame, savedSize)
+            p1, st, err = cv2.calcOpticalFlowPyrLK(savedFrame, faceFrame, p0, None, **LK_PARAMS)
+            cornerList.append(p1)
 
-        faceFrame, _ = harrCascadeFaceDet(gray)        
-
+        for i in cornerList[counter]:
+            x,y = i.ravel()
+            cv2.circle(faceFrame,(x,y),1,255,-1)
         cv2.imshow('frame',faceFrame)
+        counter += 1
         if cv2.waitKey(30) & 0xFF == ord('q'):
             break
+    print("End of Feature Tracking")
+    
     cap.release()
     cv2.destroyAllWindows()
