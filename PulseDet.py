@@ -4,6 +4,7 @@ import cv2
 import os
 import json
 import copy
+from scipy import signal, stats
 
 ROOT = './Dataset/Data'
 JSON_FOLDER = './Dataset/JSON'
@@ -11,7 +12,7 @@ HAAR = './resources/haarcascade_frontalface_default.xml'
 
 # params for ShiTomasi corner detection
 FEATURE_PARAM = dict( maxCorners = 200,
-                       qualityLevel = 0.05,
+                       qualityLevel = 0.01,
                        minDistance = 5,
                        blockSize = 5 )
 
@@ -49,17 +50,30 @@ def findMaxFace(faces):
             n = i 
     return n
 
-def interpolationCameraToECG(inputMatrix, inFr, outFr):
+def interpolationAndFiltering(inputMatrix, inFr, outFr, lowerCutoff=0.75, higherCutoff=5, filterOrder=3):
     rows, columns = inputMatrix.shape
     Fr = outFr/inFr
-    outputMatrix = np.zeros((rows, int(Fr*columns)))
+    outputMatrix = np.zeros((int(Fr*rows), columns))
     for i in range(rows):
-        inputRow = inputMatrix[i,:]
-        inputRow = inputRow.reshape([1,len(inputRow)])
-        inputRow = cv2.resize(inputRow, (int(Fr * columns), 1), interpolation = cv2.INTER_CUBIC)
-        outputMatrix[i,:] = inputRow
+        #Interpolate the Data
+        inputCol = inputMatrix[:,i]
+        inputCol = cv2.resize(inputCol.reshape([len(inputCol),1]), (1, int(Fr * rows)), interpolation = cv2.INTER_CUBIC)
+
+        # Transfrom the cutoff frequencies from the analog domain to the digital domain
+        lowerCutoffDigital = lowerCutoff / (0.5 * outFr)
+        higherCutoffDigital = higherCutoff / (0.5 * outFr)
+        # Filter the data with a Butterworth bandpass filter and a filtfilt operation for a zero-phase response
+        b, a = signal.butter(filterOrder, [lowerCutoffDigital, higherCutoffDigital], btype='band')
+        outputCol = signal.filtfilt(b, a, inputCol.ravel())
+        outputMatrix[:,i] = outputCol.ravel()
     return outputMatrix
     
+def processRawData(rawData, status, threshold = 0.25):
+    rawData = rawData[:,:,1]
+    rawData = rawData[:, status.ravel() == 1]
+    return rawData
+
+
 
 if __name__ == '__main__':
     video_filenames = os.listdir(ROOT)
@@ -78,23 +92,39 @@ if __name__ == '__main__':
         faceFrame, _ = harrCascadeFaceDet(newFrame)
         # Find Corner and then Track it
         if counter == 0:
+            # Remember the First Frame and its Size
             savedFrame = faceFrame
             savedSize  = faceFrame.shape[::-1]
+            # Extract the Shi-Tomasi Corners
             p0 = cv2.goodFeaturesToTrack(savedFrame, mask = None, **FEATURE_PARAM)
-            cornerList.append(p0)
+            cornerList.append(p0.reshape(-1,2))
+            status = np.ones((len(p0),1))
         else :
             faceFrame = cv2.resize(faceFrame, savedSize)
+            # Use the Lucas Kanade algorithm to determine the feature point locations in the new image
             p1, st, err = cv2.calcOpticalFlowPyrLK(savedFrame, faceFrame, p0, None, **LK_PARAMS)
-            cornerList.append(p1)
-
+            cornerList.append(p1.reshape(-1,2))
+            # Will be used to remove uncertain points
+            status *= st
+        # Draw Markers on the Feature Locations
         for i in cornerList[counter]:
             x,y = i.ravel()
-            cv2.circle(faceFrame,(x,y),1,255,-1)
+            cv2.circle(faceFrame, (x,y), 1, 255, -1)
         cv2.imshow('frame',faceFrame)
         counter += 1
-        if cv2.waitKey(30) & 0xFF == ord('q'):
+        if cv2.waitKey(3) & 0xFF == ord('q'):
             break
-    print("End of Feature Tracking")
-    
+    # Release the Video capture and frame
     cap.release()
     cv2.destroyAllWindows()
+    print("End of Feature Tracking")
+    print("Counter ", counter)
+    print("Number of Features worth retaining ", int(np.sum(status)) )
+
+    # Create the Corner feature Matrix
+    rawData = np.array(cornerList)
+    # Process the Data toi remove extremities
+    processedData = processRawData(rawData,status)
+    # Interpolate and filter the processed data
+    filteredData = interpolationAndFiltering(processedData,30,60)
+    print(filteredData.shape)    
