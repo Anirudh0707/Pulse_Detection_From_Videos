@@ -5,6 +5,9 @@ import os
 import json
 import copy
 from scipy import signal, stats
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+
 
 ROOT = './Dataset/Data'
 JSON_FOLDER = './Dataset/JSON'
@@ -50,15 +53,14 @@ def findMaxFace(faces):
             n = i 
     return n
 
-def interpolationAndFiltering(inputMatrix, inFr, outFr, lowerCutoff=0.75, higherCutoff=5, filterOrder=3):
+def interpolationAndFiltering(inputMatrix, inFr, outFr, lowerCutoff=0.75, higherCutoff=5, filterOrder=5):
     rows, columns = inputMatrix.shape
     Fr = outFr/inFr
     outputMatrix = np.zeros((int(Fr*rows), columns))
-    for i in range(rows):
+    for i in range(columns):
         #Interpolate the Data
         inputCol = inputMatrix[:,i]
-        inputCol = cv2.resize(inputCol.reshape([len(inputCol),1]), (1, int(Fr * rows)), interpolation = cv2.INTER_CUBIC)
-
+        inputCol = cv2.resize(inputCol.reshape([len(inputCol.ravel()),1]), (1, int(Fr * rows)), interpolation = cv2.INTER_CUBIC)
         # Transfrom the cutoff frequencies from the analog domain to the digital domain
         lowerCutoffDigital = lowerCutoff / (0.5 * outFr)
         higherCutoffDigital = higherCutoff / (0.5 * outFr)
@@ -82,11 +84,12 @@ if __name__ == '__main__':
     assert cap.isOpened(), 'Cannot capture source'
 
     # First Frame processing
-    ret = True
     counter = 0
     cornerList = []
-    while(ret):
+    while(True):
         ret, frame = cap.read()
+        if ret == False:
+            break
         newFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         faceFrame, _ = harrCascadeFaceDet(newFrame)
@@ -112,7 +115,7 @@ if __name__ == '__main__':
             cv2.circle(faceFrame, (x,y), 1, 255, -1)
         cv2.imshow('frame',faceFrame)
         counter += 1
-        if cv2.waitKey(3) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     # Release the Video capture and frame
     cap.release()
@@ -127,4 +130,53 @@ if __name__ == '__main__':
     processedData = processRawData(rawData,status)
     # Interpolate and filter the processed data
     filteredData = interpolationAndFiltering(processedData,30,60)
-    print(filteredData.shape)    
+    print("Filtered and Interpolated Data Shape ", filteredData.shape)
+    # PCA decomposition and projecting onto the best vector
+    standardizedData = StandardScaler().fit_transform(filteredData)
+    pca = PCA(n_components = 5)
+    principalComponents = pca.fit_transform(standardizedData)
+    # Plot
+    x_disp = 30*np.arange(counter)/counter
+    x_disp = x_disp[5:]
+
+    y_disp = np.fft.fft(principalComponents[:,0])
+    plt.plot(x_disp, 20*np.log(np.abs(y_disp[5:counter])))
+    plt.show()
+
+    y_disp = np.fft.fft(principalComponents[:,1])
+    plt.plot(x_disp, 20*np.log(np.abs(y_disp[5:counter])))
+    plt.show()
+    
+    y_disp = np.fft.fft(principalComponents[:,2])
+    plt.plot(x_disp, 20*np.log(np.abs(y_disp[5:counter])))
+    plt.show()
+
+    y_disp = np.fft.fft(principalComponents[:,3])
+    plt.plot(x_disp, 20*np.log(np.abs(y_disp[5:counter])))
+    plt.show()
+
+    y_disp = np.fft.fft(principalComponents[:,4])
+    plt.plot(x_disp, 20*np.log(np.abs(y_disp[5:counter])))
+    plt.show()
+    
+    ##################
+
+    y_disp = principalComponents[:,0]
+    plt.plot(y_disp)
+    plt.show()
+
+    y_disp = principalComponents[:,1]
+    plt.plot(y_disp)
+    plt.show()
+    
+    y_disp = principalComponents[:,2]
+    plt.plot(y_disp)
+    plt.show()
+
+    y_disp = principalComponents[:,3]
+    plt.plot(y_disp)
+    plt.show()
+
+    y_disp = principalComponents[:,4]
+    plt.plot(y_disp)
+    plt.show()
