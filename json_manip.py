@@ -3,42 +3,36 @@ import matplotlib.pyplot as plt
 import cv2
 import os
 import json
+import heartpy as hp
 
-rootfolder = '.\Problem_Set_Data\Data'
-jsonfolder = '.\Problem_Set_Data\JSON'
+ROOT = './Dataset/Data'
+JSON_FOLDER = './Dataset/JSON'
 
 
-with open(os.path.join(jsonfolder,'01-01.json')) as f:
+with open(os.path.join(JSON_FOLDER,'01-01.json')) as f:
   data = json.load(f)
 
-keys = data.keys()
-values = data.values()
-for i in keys:
-    print(type(i))
-
+for i in data.keys():
+  print(len(data[i]))
+key = '/FullPackage'
+values = data[key]
+data = []
 for i in values:
-    print(i[-1])
+  data.append(i['Value']['waveform'])
 
-# # x = os.listdir('./Problem_Set_Data/Data')
-# print(os.listdir('.'))
+#{'barGraph': 5, 'beep': False, 'droppingo2Sat': False, 'o2saturation': 95, 'probeError': False, 'pulseRate': 71, 'searching': False, 'searchingToLong': False, 'signalStrength': 4, 'waveform': 41}
+print(len(data))
+data = np.array(data)
+plt.plot(data)
+plt.show()
 
-# # cap = cv2.VideoCapture(os.path.join(rootfolder,x[0]))
-# cap = cv2.VideoCapture('1.mp4')
-# # cap.set(cv2.CV_CAP_PROP_FOURCC, cv2.CV_FOURCC('D','I','V','4'))
+working_data, measures = hp.process(data, 60.0)
+hp.plotter(working_data, measures)
 
-# # print(os.path.join(rootfolder,x[0]))    
-
-# if(cap.isOpened() == False):
-#     print("Fatal Error")
-
-# while(cap.isOpened()):
-#     ret, frame = cap.read()
-
-#     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-#     cv2.imshow('frame',gray)
-#     if cv2.waitKey(10) & 0xFF == ord('q'):
-#         break
-
-# cap.release()
-# cv2.destroyAllWindows()
+# 68.11
+# 71.82
+# 53.44
+# 61.18
+# 46.51
+# 65.39
+# 126.89
