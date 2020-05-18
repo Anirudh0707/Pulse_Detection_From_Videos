@@ -6,12 +6,13 @@ import json
 import copy
 import heartpy as hp
 from scipy import signal, stats
-from sklearn.decomposition import PCA
+from sklearn.decomposition import PCA, FastICA
 from sklearn.preprocessing import StandardScaler
 
 ROOT = './Dataset/Data'
 JSON_FOLDER = './Dataset/JSON'
 HAAR = './resources/haarcascade_frontalface_default.xml'
+GT = (68.11, 71.82, 53.44, 61.18, 46.51, 65.39, 126.89)
 
 # params for ShiTomasi corner detection
 FEATURE_PARAM = dict( maxCorners = 50,
@@ -23,7 +24,7 @@ FEATURE_PARAM = dict( maxCorners = 50,
 CRITERIA = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001)
 
 # Parameters for lucas kanade optical flow
-LK_PARAMS = dict( winSize  = (10,10),
+LK_PARAMS = dict( winSize  = (5,5),
                   maxLevel = 5,
                   criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
 
@@ -98,25 +99,26 @@ def computePCA(filteredData, n_components = 5, alpha = 0.25):
     meanRow = np.mean(tempData, axis = 0)
     tempData =  tempData - meanRow
 
-    CovMat = np.transpose(tempData) @ (tempData)
-    eigenValues, eigenVectors = np.linalg.eig(CovMat)
-    indiciesEigen = np.argsort(np.real(eigenValues))
-    indiciesEigen = indiciesEigen[::-1]
-    indiciesEigen = indiciesEigen[0:n_components]
-    eigenVectors = np.real(eigenVectors[:,indiciesEigen])    
-    principalComponents = filteredData @ eigenVectors
+    # CovMat = np.transpose(tempData) @ (tempData)
+    # eigenValues, eigenVectors = np.linalg.eig(CovMat)
+    # indiciesEigen = np.argsort(np.real(eigenValues))
+    # indiciesEigen = indiciesEigen[::-1]
+    # indiciesEigen = indiciesEigen[0:n_components]
+    # eigenVectors = np.real(eigenVectors[:,indiciesEigen])    
+    # principalComponents = filteredData @ eigenVectors
     ###############################
-    # pca = PCA(n_components = n_components)
-    # pca.fit(tempData)
-    # # Apply the PCA model
-    # principalComponents = pca.transform(filteredData)
+    pca = PCA(n_components = n_components)
+    pca.fit(tempData)
+    # Apply the PCA model
+    principalComponents = pca.transform(filteredData)
     return principalComponents
 
 
 if __name__ == '__main__':
     video_filenames = os.listdir(ROOT)
     face_cascade = cv2.CascadeClassifier(HAAR)
-    cap = cv2.VideoCapture(os.path.join(ROOT,video_filenames[6]))
+    inputNumer = int(input("Enter a Num from 0 to 6 :: "))
+    cap = cv2.VideoCapture(os.path.join(ROOT,video_filenames[inputNumer]))
     assert cap.isOpened(), 'Cannot capture source'
 
     # First Frame processing
@@ -197,5 +199,5 @@ if __name__ == '__main__':
         plt.plot(y_disp)
         plt.title(str(i))
         plt.show()
-
+    print("Expected ",GT[inputNumer])
     # Peak det
