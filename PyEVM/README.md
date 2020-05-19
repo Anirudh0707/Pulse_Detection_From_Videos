@@ -1,3 +1,9 @@
+# Pusle Detection From Color Changes in the Head
+
+We have used a plug and play Video Magnification Code for amplifying the color changes in the facial regions.
+
+Please note that the orginal repo can be found at https://github.com/flyingzhao/PyEVM
+
 # Python implementation of EVM(Eulerian Video Magnification)
 
 This is a python implementation of eulerian video magnification《[Eulerian Video Magnification for Revealing Subtle Changes in the World](http://people.csail.mit.edu/mrub/evm/)》.
