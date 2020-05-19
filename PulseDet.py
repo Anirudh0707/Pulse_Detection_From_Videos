@@ -15,7 +15,7 @@ HAAR = './resources/haarcascade_frontalface_default.xml'
 GT = (68.11, 71.82, 53.44, 61.18, 46.51, 65.39, 126.89)
 
 # params for ShiTomasi corner detection
-FEATURE_PARAM = dict( maxCorners = 50,
+FEATURE_PARAM = dict( maxCorners = 100,
                        qualityLevel = 0.01,
                        minDistance = 7,
                        blockSize = 7 )
@@ -24,8 +24,8 @@ FEATURE_PARAM = dict( maxCorners = 50,
 CRITERIA = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 0.001)
 
 # Parameters for lucas kanade optical flow
-LK_PARAMS = dict( winSize  = (5,5),
-                  maxLevel = 5,
+LK_PARAMS = dict( winSize  = (100,5),
+                  maxLevel = 17,
                   criteria = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
 
 def harrCascadeFaceDet(image):
