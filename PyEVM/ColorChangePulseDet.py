@@ -1,22 +1,25 @@
 import numpy as np
+import argparse
 import matplotlib.pyplot as plt
 import cv2
-import os
-import json
-import copy
-import heartpy as hp
+import EVM
 from scipy import signal, stats
 from sklearn.decomposition import PCA, FastICA
-from sklearn.preprocessing import StandardScaler
-import EVM
 
-ROOT = './Dataset/Data'
-JSON_FOLDER = './Dataset/JSON'
-HAAR = './resources/haarcascade_frontalface_default.xml'
 GT = (68.11, 71.82, 53.44, 61.18, 46.51, 65.39, 126.89)
 
+def parseArguments():
+    parser = argparse.ArgumentParser(description='Set the Parameters for Video Processing')
+    parser.add_argument('-p','--path', type=str, default = 'face.mp4', help='Path to Video File')
+    parser.add_argument('-l','--levels', type=int, default = 3, help='Number of Levels for the Image Pyramid')
+    parser.add_argument('-a','--amplification', type=int, default = 20, help='Amplification Factor for Video Magnification')
+    parser.add_argument('-o','--outputSamplingFrequency', type=int, default = 60, help='Number of Levels for the Image Pyramid')
+
+    args = parser.parse_args()
+    return args.path, args.levels, args.amplification, args.outputSamplingFrequency
 
 def harrCascadeFaceDet(image):
+    face_cascade = cv2.CascadeClassifier('./resources/haarcascade_frontalface_default.xml')
     faces = face_cascade.detectMultiScale(image, 1.3, 5)
     maxFaceIndex = findMaxFace(faces)
     (x,y,w,h) = faces[maxFaceIndex].copy()
@@ -64,20 +67,12 @@ def interpolationAndFiltering(inputMatrix, inFr, outFr, lowerCutoff=0.75, higher
     return outputMatrix
 
 if __name__ == '__main__':
-    video_filenames = os.listdir(ROOT)
-    face_cascade = cv2.CascadeClassifier(HAAR)
-    inputNumer = int(input("Enter a Num from 0 to 6 :: "))
-    cap = cv2.VideoCapture(os.path.join(ROOT,video_filenames[inputNumer])) # 
+    path, levels, amplification, outFr = parseArguments()
+    cap = cv2.VideoCapture(path) 
     assert cap.isOpened(), 'Cannot capture source'
+    inFr  = int(cap.get(cv2.CAP_PROP_FPS))
 
-    # Paramters for this Code
-    levels = 3
-    amplification = 20
     counter = 0
-    inFr  = 30
-    outFr = 60
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
-    assert fps == inFr
     videoTensor = []
     while(True):
         ret, frame = cap.read()
@@ -100,8 +95,7 @@ if __name__ == '__main__':
     print("Reconstruction Complete")
 
     # Sum over Width and Breadth to get the Time vs RGB components
-    # Note 1: Format is B,G,R due to OpenCV
-    # Note 2: Using 2 lines for computing mean as only the recent numpy library has multi axis summing in a sinlge command(acc to th numpy doc website)
+    # Note : Format is B,G,R due to OpenCV
     BGRComponents = np.mean(reconstructedTensor, axis = 1)
     BGRComponents = np.mean(BGRComponents, axis = 1)
     BGRComponents = interpolationAndFiltering(BGRComponents, inFr, outFr)
@@ -126,9 +120,12 @@ if __name__ == '__main__':
     # Peak Det and Display
     distance = int(outFr*2/listForDistanceEstimation[PCAIndex])-10 # Emperically found realtion
     print(distance)
-    print("Target ", GT[inputNumer])
     peaks, _ = signal.find_peaks(chosenSignal, distance=distance)
     plt.plot(chosenSignal)
     plt.plot(peaks, chosenSignal[peaks], "x")
     plt.title("Avg Heart Beat = "+str(60*60/(peaks[-1] - peaks[0])*len(peaks)))
+    plt.show()
+
+    y_disp = np.fft.fft(chosenSignal)
+    plt.plot(x_disp, np.abs(y_disp[0:nyquist]))
     plt.show()
