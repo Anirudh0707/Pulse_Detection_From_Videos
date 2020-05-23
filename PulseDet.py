@@ -27,7 +27,7 @@ def parseArguments():
     parser.add_argument('-o','--outputSamplingFrequency', type=int, default = 60, help='Number of levels for the image pyramid')
     parser.add_argument('-n','--numComponents', type=int, default = 5, help='Number of components for PCA')
     parser.add_argument('-a','--alpha', type=int, default = 25, help='Int between 0 to 100. Top alpha percent is discarded')
-    parser.add_argument('-q','--qfactor', type=int, default = 3, help='Q Factor for FFT peak enhancement')
+    parser.add_argument('-q','--qfactor', type=int, default = 2, help='Q Factor for FFT peak enhancement')
 
     args = parser.parse_args()
     return args.path, args.outputSamplingFrequency, args.numComponents , args.alpha, args.qfactor
@@ -111,7 +111,7 @@ def peakAmplification(chosenSignal, outFr, f0, Q):
     return peakFiltered + harmonicFiltered
 
 if __name__ == '__main__':
-    path, outFr, n_components, removeTopPCA, Q_Factor = parseArguments()
+    path, outFr, n_components, removeTopComponents, Q_Factor = parseArguments()
     cap = cv2.VideoCapture(path)
     assert cap.isOpened(), 'Cannot capture source'
     inFr  = int(cap.get(cv2.CAP_PROP_FPS))
@@ -148,13 +148,13 @@ if __name__ == '__main__':
     # Create the Corner feature Matrix
     cornerList.pop(0)
     rawData = np.array(cornerList)
-    # Process the Data toi remove extremities
+    # Process the Data to remove extremities
     processedData = processRawData(rawData,status=None)
     # Interpolate and filter the processed data
     filteredData = interpolationAndFiltering(processedData,inFr,outFr)
     print("Filtered and Interpolated Data Shape ", filteredData.shape)
     # PCA decomposition and projecting onto the best vector
-    principalComponents = computePCA(filteredData, n_components = n_components, alpha = removeTopPCA/100)
+    principalComponents = computePCA(filteredData, n_components = n_components, alpha = removeTopComponents/100)
     nyquist = int(len(principalComponents)/2)
     powerRatio = []
     listForDistanceEstimation = []
@@ -162,7 +162,7 @@ if __name__ == '__main__':
         fftData = np.fft.fft(principalComponents[:,i])[1:nyquist]
         powerSpectrum = np.abs(fftData)**2
         maxFreq = np.argmax(powerSpectrum)
-        print(i, "     ", (maxFreq+1)/nyquist*outFr/2)
+        # print(i, "     ", (maxFreq+1)/nyquist*outFr/2)
         powerInMaxFreq = np.sum(powerSpectrum[maxFreq-1:maxFreq+2]) #+ np.sum(powerSpectrum[2*maxFreq:2*maxFreq+3])
         powerRatio.append(powerInMaxFreq/np.sum(powerSpectrum))
         listForDistanceEstimation.append((maxFreq+1)/nyquist*outFr/2)
@@ -179,7 +179,8 @@ if __name__ == '__main__':
     plt.plot(peaks, chosenSignal[peaks], "x")
     plt.title("Avg Heart Beat = "+str(listForDistanceEstimation[PCAIndex]*60))
     plt.show()
-
-    y_disp = np.fft.fft(chosenSignal)
-    plt.plot(x_disp, np.abs(y_disp[1:nyquist]))
-    plt.show()
+    print("Average Beats Per Minute :: " + str(listForDistanceEstimation[PCAIndex]*60))
+    print("Number of Peaks :: ", len(peaks))
+    # y_disp = np.fft.fft(chosenSignal)
+    # plt.plot(x_disp, np.abs(y_disp[1:nyquist]))
+    # plt.show()
