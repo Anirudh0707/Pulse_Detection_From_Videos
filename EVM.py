@@ -171,4 +171,4 @@ def magnify_motion(video_name,low,high,levels=3,amplification=20):
 
 if __name__=="__main__":
     magnify_color("face.mp4",0.4,3)
-    # magnify_motion("face.mp4",0.4,3)
+    # magnify_motion("baby.mp4",0.4,3)

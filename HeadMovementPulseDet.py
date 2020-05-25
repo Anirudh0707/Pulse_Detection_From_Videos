@@ -172,15 +172,12 @@ if __name__ == '__main__':
     # Plot
     x_disp = outFr/2*np.arange(nyquist)/nyquist
     x_disp = x_disp[1:]
-    distance = int(outFr/listForDistanceEstimation[PCAIndex])-5 # Emperically found realtion
+    distance = int(0.7*outFr/listForDistanceEstimation[PCAIndex]) # Emperically found realtion
     print("Peak Min Dist ", distance)
-    peaks, _ = signal.find_peaks(chosenSignal, distance=distance)
+    peaks, _ = signal.find_peaks(chosenSignal, distance=distance, height = np.mean(chosenSignal))
     plt.plot(chosenSignal)
     plt.plot(peaks, chosenSignal[peaks], "x")
     plt.title("Avg Heart Beat = "+str(listForDistanceEstimation[PCAIndex]*60))
     plt.show()
     print("Average Beats Per Minute :: " + str(listForDistanceEstimation[PCAIndex]*60))
     print("Number of Peaks :: ", len(peaks))
-    # y_disp = np.fft.fft(chosenSignal)
-    # plt.plot(x_disp, np.abs(y_disp[1:nyquist]))
-    # plt.show()

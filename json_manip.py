@@ -30,11 +30,3 @@ working_data, measures = hp.process(data, args.frequency)
 hp.plotter(working_data, measures)
 print("Average Beats Per Minute :: ", measures['bpm'])
 print("Number of Peaks :: ", len(working_data['peaklist']))
-# Observed Values
-# 0 # 68.11
-# 1 # 71.82
-# 2 # 53.44
-# 3 # 61.18
-# 4 # 46.51
-# 5 # 65.39
-# 6 # 126.89

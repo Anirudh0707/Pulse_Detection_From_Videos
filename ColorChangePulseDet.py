@@ -47,7 +47,7 @@ def findMaxFace(faces):
             n = i 
     return n
 
-def interpolationAndFiltering(inputMatrix, inFr, outFr, lowerCutoff=0.75, higherCutoff=5, filterOrder=5, savgolWindow = 61, polynomialOrder=6):
+def interpolationAndFiltering(inputMatrix, inFr, outFr, lowerCutoff=0.75, higherCutoff=5, filterOrder=5):
     rows, columns = inputMatrix.shape
     # Transfrom the cutoff frequencies from the analog domain to the digital domain
     lowerCutoffDigital = lowerCutoff / (0.5 * outFr)
@@ -62,7 +62,6 @@ def interpolationAndFiltering(inputMatrix, inFr, outFr, lowerCutoff=0.75, higher
         # Filter the data with a Butterworth bandpass filter and a filtfilt operation for a zero-phase response
         b, a = signal.butter(filterOrder, [lowerCutoffDigital, higherCutoffDigital], btype='band', analog=False)
         inputCol = signal.filtfilt(b, a, inputCol.ravel())
-        # inputCol = signal.savgol_filter(inputCol, savgolWindow, polynomialOrder)
         outputMatrix[:,i] = inputCol.ravel()
     return outputMatrix
 
@@ -126,15 +125,12 @@ if __name__ == '__main__':
     chosenSignal = principalComponents[:,PCAIndex]
     chosenSignal = peakAmplification(chosenSignal, outFr = outFr, f0 = listForDistanceEstimation[PCAIndex])
     # Peak Det and Display
-    distance = int(outFr*2/listForDistanceEstimation[PCAIndex])-10 # Emperically found realtion via finetuning
+    distance = int(outFr*1.6/listForDistanceEstimation[PCAIndex]) # Emperically found realtion via finetuning
     print(distance)
-    peaks, _ = signal.find_peaks(chosenSignal, distance=distance)
+    peaks, _ = signal.find_peaks(chosenSignal, distance=distance, height = np.mean(chosenSignal))
     plt.plot(chosenSignal)
     plt.plot(peaks, chosenSignal[peaks], "x")
-    plt.title("Avg Heart Beat = "+str(60*60/(peaks[-1] - peaks[0])*len(peaks)))
+    plt.title("Avg Heart Beat = "+str(60*outFr/(peaks[-1] - peaks[0])*len(peaks)))
     plt.show()
-    print("Average Beats Per Minute :: " + str(60*60/(peaks[-1] - peaks[0])*len(peaks)))
+    print("Average Beats Per Minute :: " + str(60*outFr/(peaks[-1] - peaks[0])*len(peaks)))
     print("Number of Peaks :: ", len(peaks))
-    # y_disp = np.fft.fft(chosenSignal)
-    # plt.plot(x_disp, np.abs(y_disp[0:nyquist]))
-    # plt.show()
