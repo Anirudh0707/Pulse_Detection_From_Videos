@@ -37,7 +37,24 @@ There are other arguments that can be parsed. For more information, please run
 ```
 python3 ColorChangePulseDet.py --help
 ```
+Note : Please keep the EVM.py file in the same folder as the ColorChangePulseDet.py file. THe pulse detection code needs the functions in EVM.py
 
 This code takes in an input video file from the dataset and runs the algorithm descirbed in this [paper](https://people.csail.mit.edu/mrub/papers/vidmag.pdf) to first amplify the color of the video. The algorithm then takes the color amplified signal and spatially averages over the entire height and width of each time instance and color channel. The 3 signals are then interpolated and filtered. The 3 signals are decomposed using the PCA. The final signal is chosen among the 3 decomposed signals and is peak amplififed 
 
 An additional Jupyter notebook has been added to delinate each aspect of the code.
+
+## Pusle Extraction From JSON files
+
+To run the algorithm, open the command prompt and enter the folowing line
+```
+python3 json_manip.py --path FilePath
+```
+There are other arguments that can be parsed. For more information, please run
+```
+python3 json_manip.py --help
+```
+
+This code takes in a json file and utputs the ground truth waveform. It uses the heartpy module
+
+An additional Jupyter notebook has been added to delinate each aspect of the code.
+
