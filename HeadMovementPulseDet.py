@@ -5,8 +5,6 @@ import cv2
 from scipy import signal, stats
 from sklearn.decomposition import PCA, FastICA
 
-GT = (68.11, 71.82, 53.44, 61.18, 46.51, 65.39, 126.89)
-
 # params for ShiTomasi corner detection
 FEATURE_PARAM = dict( maxCorners = 100,
                        qualityLevel = 0.01,

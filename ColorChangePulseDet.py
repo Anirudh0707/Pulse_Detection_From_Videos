@@ -6,8 +6,6 @@ import EVM
 from scipy import signal, stats
 from sklearn.decomposition import PCA, FastICA
 
-GT = (68.11, 71.82, 53.44, 61.18, 46.51, 65.39, 126.89)
-
 def parseArguments():
     parser = argparse.ArgumentParser(description='Set the Parameters for Video Processing')
     parser.add_argument('-p','--path', type=str, default = 'face.mp4', help='Path to Video File')
